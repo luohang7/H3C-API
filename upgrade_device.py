@@ -1,10 +1,19 @@
+import os
+import logging
 import csv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from ncclient import manager
-from ncclient.xml_ import to_ele
-import time
 
-# 读取设备列表的 CSV 文件
+log = logging.getLogger(__name__)
+
+
+# 读取 XML 文件内容
+def read_xml_file(file_path):
+    with open(file_path, 'r') as file:
+        return file.read()
+
+
+# 读取设备信息
 def read_devices_from_csv(file_path):
     devices = []
     with open(file_path, mode='r') as file:
@@ -19,58 +28,75 @@ def read_devices_from_csv(file_path):
             })
     return devices
 
-# 读取 XML 文件内容
-def read_xml_file(file_path):
-    with open(file_path, 'r') as file:
-        return file.read()
 
-# 读取 XML 文件
-system_boot_upgrade_xml = read_xml_file('system_boot_upgrade.xml')
-feature_upgrade_xml = read_xml_file('feature_upgrade.xml')
-reboot_xml = read_xml_file('reboot.xml')
+# 建立与设备的连接
+def h3c_connection(device):
+    return manager.connect(
+        host=device['host'],
+        port=device['port'],
+        username=device['username'],
+        password=device['password'],
+        hostkey_verify=device['hostkey_verify'],
+        device_params={'name': "h3c"},
+        allow_agent=False,
+        look_for_keys=False
+    )
 
-# 升级设备的函数
-def upgrade_device(device_params, upgrade_xmls):
+
+# 检查 RPC 回复报文
+def _check_response(rpc_obj, snippet_name, device):
+    print(f"RPC reply for {snippet_name} on device {device['host']} is {rpc_obj.xml}")
+    xml_str = rpc_obj.xml
+    if "<ok/>" in xml_str:
+        print(f"{snippet_name} successful on device {device['host']}")
+    else:
+        print(f"Cannot successfully execute: {snippet_name} on device {device['host']}")
+
+
+# 执行操作
+def execute_operation(device, xml_content, operation_name):
     try:
-        with manager.connect(**device_params) as m:
-            # 传输系统和启动包并执行升级
-            response = m.edit_config(target='running', config=upgrade_xmls['system_boot'])
-            print(f"设备 {device_params['host']} 系统和启动包升级响应：{response}")
-
-            # 重启设备
-            response = m.dispatch(to_ele(upgrade_xmls['reboot']))
-            print(f"设备 {device_params['host']} 重启响应：{response}")
-
-            # 等待设备重启完成 (假设等待 300 秒)
-            time.sleep(300)
-
-            # 重新连接设备
-            with manager.connect(**device_params) as m:
-                # 传输和升级特性包
-                response = m.edit_config(target='running', config=upgrade_xmls['feature'])
-                return f"设备 {device_params['host']} 特性包升级响应：{response}"
+        with h3c_connection(device) as m:
+            if operation_name == 'Reboot':
+                response = m.dispatch(xml_content)
+            else:
+                response = m.edit_config(target='running', config=xml_content)
+            _check_response(response, operation_name, device)
     except Exception as e:
-        return f"设备 {device_params['host']} 升级失败：{e}"
+        print(f"{operation_name}过程中在设备 {device['host']} 发生错误: {e}")
 
-# 主函数，读取设备列表并执行升级
+
 def main():
     devices = read_devices_from_csv('devices.csv')
-    upgrade_xmls = {
-        'system_boot': system_boot_upgrade_xml,
-        'feature': feature_upgrade_xml,
-        'reboot': reboot_xml
-    }
 
-    # 使用多线程批量升级设备
+    # 定义XML文件夹路径
+    xml_folder = 'xml_files'
+
+    # 读取 XML 文件
+    tftp_download_xml = read_xml_file(os.path.join(xml_folder, 'tftp_download.xml'))
+    system_boot_upgrade_xml = read_xml_file(os.path.join(xml_folder, 'system_boot_upgrade.xml'))
+    reboot_xml = read_xml_file(os.path.join(xml_folder, 'reboot.xml'))
+
+    # 定义要执行的操作
+    operations = [
+        ('TFTP_Download', tftp_download_xml),
+        ('System_Boot_Upgrade', system_boot_upgrade_xml),
+        ('Reboot', reboot_xml)
+    ]
+
+    # 使用 ThreadPoolExecutor 进行多线程操作
     with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(upgrade_device, device, upgrade_xmls): device for device in devices}
+        futures = []
+        # 对于每个设备
+        for device in devices:
+            # 对于每个操作
+            for operation_name, xml_content in operations:
+                futures.append(executor.submit(execute_operation, device, xml_content, operation_name))
+
+        # 等待所有任务完成
         for future in as_completed(futures):
-            device = futures[future]
-            try:
-                result = future.result()
-                print(result)
-            except Exception as e:
-                print(f"设备 {device['host']} 升级过程中出现异常：{e}")
+            future.result()  # 等待任务完成并获取结果
+
 
 if __name__ == "__main__":
     main()
