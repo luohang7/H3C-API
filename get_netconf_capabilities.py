@@ -1,8 +1,12 @@
 from ncclient import manager
+import logging
+
+# 设置日志记录以调试
+'logging.basicConfig(level=logging.DEBUG)'
 
 # 连接设备的参数
 device_params = {
-    'host': '192.168.254.99',  # 设备IP地址
+    'host': '192.168.253.99',  # 设备IP地址
     'port': 830,            # NETCONF端口
     'username': 'lpssy',    # 登录用户名
     'password': 'Lpssy123', # 登录密码

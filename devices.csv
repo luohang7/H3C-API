@@ -1,2 +1,2 @@
-host,port,username,password
-192.168.253.99,830,lpssy,Lpssy123
+name,host,port,username,password
+ZhuY-1F-48-POE,192.168.253.99,830,lpssy,Lpssy123
