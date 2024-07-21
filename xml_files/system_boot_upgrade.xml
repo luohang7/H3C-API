@@ -1,0 +1,20 @@
+<config xmlns:xc="urn:ietf:params:xml:ns:netconf:base:1.0">
+ <Package>
+  <SetBootImage>
+   <DeviceNode>
+    <Chassis>1</Chassis>
+    <Slot>0</Slot>
+    <CPUID>0</CPUID>
+   </DeviceNode>
+   <ImageFiles>
+    <Feature>flash:/s5130s_ei-cmw710-freeradius-r6357.bin</Feature>
+    <Feature>flash:/s5130s_ei-cmw710-grpcpkg-r6357.bin</Feature>
+   </ImageFiles>
+   <IPEFileName>flash:/S5130S_EI-CMW710-R6357.ipe</IPEFileName>
+   <Type>Main</Type>
+   <OverwriteLocalFile>false</OverwriteLocalFile>
+   <DeleteIPEFile>true</DeleteIPEFile>
+   <Undecompressed>false</Undecompressed>
+  </SetBootImage>
+ </Package>
+</config>
