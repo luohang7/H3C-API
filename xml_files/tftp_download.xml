@@ -1,6 +1,0 @@
-<config xmlns:xc="urn:ietf:params:xml:ns:netconf:base:1.0">
- <tftp>
-  <server>43.229.153.28</server>
-  <file>S5130S_EI-CMW710-R6357/S5130S_EI-CMW710-R6357.ipe</file>
- </tftp>
-</config>
