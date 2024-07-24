@@ -329,7 +329,7 @@ def process_device(row):
         logger.error(f"重连设备时出错: {e}")
 
 def main():
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=30) as executor:
         futures = [executor.submit(process_device, row) for idx, row in config.iterrows()]
         for future in as_completed(futures):
             try:

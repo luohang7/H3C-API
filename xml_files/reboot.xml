@@ -1,8 +1,6 @@
-<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0" message-id="1">
- <reboot xmlns="http://www.h3c.com/netconf/actions:1.0">
+<reboot xmlns="http://www.h3c.com/netconf/actions:1.0">
   <device>
-   <save>true</save> <!-- 确保重启前保存配置 -->
-   <immediate>true</immediate>
+    <save>true</save>
+    <immediate>true</immediate>
   </device>
- </reboot>
-</rpc>
+</reboot>
