@@ -62,5 +62,5 @@ export default {
 </script>
 
 <style>
-@import 'vuetify/dist/vuetify.min.css';
+@import "~vuetify/dist/vuetify.min.css";
 </style>

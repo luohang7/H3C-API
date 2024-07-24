@@ -20,10 +20,20 @@ module.exports = {
       }
     }
   },
-    css: {
+  css: {
     loaderOptions: {
+      css: {
+        importLoaders: 1
+      },
+      postcss: {
+        postcssOptions: {
+          plugins: [
+            require('autoprefixer')
+          ]
+        }
+      },
       sass: {
-        additionalData: `@import "~vuetify/src/styles/styles.sass"`
+        additionalData: `@import "~vuetify/src/styles/styles.sass";`
       }
     }
   }
