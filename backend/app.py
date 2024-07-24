@@ -9,6 +9,9 @@ app = Flask(__name__)
 # 设置日志
 logging.basicConfig(level=logging.DEBUG)
 
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 @app.route('/run_script', methods=['POST'])
 def run_script():
