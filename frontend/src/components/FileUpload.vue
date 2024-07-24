@@ -30,10 +30,14 @@ export default {
     };
   },
   methods: {
-    handleFileUpload(event) {
-      this.selectedFile = event.target.files[0];
+    handleFileUpload(file) {
+      this.selectedFile = file;
     },
     async uploadFile() {
+      if (!this.selectedFile) {
+        console.error('No file selected');
+        return;
+      }
       const formData = new FormData();
       formData.append('file', this.selectedFile);
 
