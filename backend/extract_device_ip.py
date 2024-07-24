@@ -1,7 +1,7 @@
 import re
 
 # 读取 .log 文件中的数据
-with open('check_version.log', 'r', encoding='gbk', errors='ignore') as file:
+with open('', 'r', encoding='gbk', errors='ignore') as file:
     log_data = file.read()
 
 # 正则表达式模式，用于匹配设备名称和括号内的 IP 地址

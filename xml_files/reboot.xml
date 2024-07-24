@@ -1,6 +1,0 @@
-<reboot xmlns="http://www.h3c.com/netconf/actions:1.0">
-  <device>
-    <save>true</save>
-    <immediate>true</immediate>
-  </device>
-</reboot>

@@ -1,5 +1,4 @@
 from ncclient import manager
-from ncclient.xml_ import to_ele
 import logging
 import telnetlib
 import time
@@ -7,41 +6,18 @@ import pandas as pd
 import sys
 from ncclient.operations.errors import TimeoutExpiredError
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from netconf_utils import send_rpc
 
 # 配置日志级别和格式，包含时间戳，并将日志信息写入文件
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s %(levelname)s:%(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    handlers=[
-        logging.FileHandler("device_upgrade.log"),
-        logging.StreamHandler()
-    ]
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
 logger = logging.getLogger(__name__)
 
 # 读取配置文件
 config = pd.read_csv('devices.csv')
-
-#目标版本
-target_version = [
-    'flash:/s5130s_ei-cmw710-boot-r6357.bin',
-    'flash:/s5130s_ei-cmw710-system-r6357.bin',
-    'flash:/s5130s_ei-cmw710-freeradius-r6357.bin',
-    'flash:/s5130s_ei-cmw710-grpcpkg-r6357.bin'
-]
-
-# 文件传输命令，使用临时 channel
-file_transfer_rpc = """
-<CLI xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-  <Configuration exec-use-channel="false">
-    quit
-    tftp 192.168.36.2 get S5130S_EI-CMW710-R6357.ipe 
-    tftp 192.168.36.2 get s5130s_ei-cmw710-freeradius-r6357.bin 
-    tftp 192.168.36.2 get s5130s_ei-cmw710-grpcpkg-r6357.bin
-  </Configuration>
-</CLI>
-"""
 
 # 固件升级的 RPC
 firmware_upgrade_rpc = """
@@ -144,17 +120,6 @@ get_version_rpc = """
   </filter>
 </get>
 """
-def send_rpc(m, rpc, description):
-    try:
-        response = m.dispatch(to_ele(rpc))
-        logger.info(f"{description} RPC 回复: {response.xml}")
-        return response
-    except TimeoutExpiredError as e:
-        logger.error(f"{description} 操作期间出错: {e}，继续执行剩余操作。")
-        return None
-    except Exception as e:
-        logger.info(f"{description} 操作期间出错: {e}")
-        return None
 def reconnect(host, port, username, password, max_retries=3, wait_time=60):
     for attempt in range(max_retries):
         logger.info(f"尝试重新连接... 尝试次数 {attempt + 1}")
@@ -215,31 +180,12 @@ def configure_netconf_via_telnet(host, username, password):
     tn.close()
     logger.info("Telnet 配置 NETCONF 完成.")
 
-def check_version(m):
-    logger.info("获取当前设备版本信息...")
-    response = send_rpc(m, get_version_rpc, "获取版本信息")
-    if response:
-        root = to_ele(response.xml)
-        namespaces = {'h3c': 'http://www.h3c.com/netconf/data:1.0'}
-        version_elements = root.xpath('//h3c:BootList[h3c:BootType="0"]/h3c:ImageFiles/h3c:FileName', namespaces=namespaces)
-        if version_elements:
-            current_version_files = [elem.text for elem in version_elements]
-            logger.info(f"当前设备版本文件: {current_version_files}")
-            return current_version_files
-    return None
-
 def process_device(row):
     name = row['name']
     host = row['host']
     port = int(row['port'])
     username = row['username']
     password = row['password']
-
-    logger.info(f"处理设备: {name} ({host})")
-
-    # 配置 NETCONF
-    configure_netconf_via_telnet(host, username, password)
-
 
     try:
         # 连接设备并执行文件传输命令
@@ -251,16 +197,12 @@ def process_device(row):
                 hostkey_verify=False,
                 timeout=600  # 设置更长的超时时间
         ) as m:
-            logger.info(f"This session id is {m.session_id}.")
-
-            current_version_files = check_version(m)
 
             if current_version_files:
                 if set(target_version) != set(current_version_files):
                     logger.info("当前版本不匹配，需要升级。")
 
-                    logger.info("发送tftp获取文件命令...")
-                    send_rpc(m, file_transfer_rpc, "file transfer")
+
     
                     logger.info("发送固件升级命令...")
                     send_rpc(m, firmware_upgrade_rpc, "固件升级")
