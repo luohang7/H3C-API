@@ -10,6 +10,10 @@ module.exports = {
        '/upload_csv': {
         target: 'http://localhost:5000',
         changeOrigin: true
+      },
+      '/stop_script':{
+        target: 'http://localhost:5000',
+        changeOrigin: true
       }
     }
   },

@@ -7,15 +7,15 @@
 </template>
 
 <script>
+import FileUpload from '@/components/FileUpload.vue';
 import ScriptSelector from '@/components/ScriptSelector.vue';
 import OutputDisplay from '@/components/OutputDisplay.vue';
-import FileUpload from '@/components/FileUpload.vue';
 
 export default {
   components: {
+    FileUpload,
     ScriptSelector,
-    OutputDisplay,
-    FileUpload
+    OutputDisplay
   },
   data() {
     return {
