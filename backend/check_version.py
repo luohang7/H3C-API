@@ -1,8 +1,13 @@
+import os
 from ncclient import manager
 from ncclient.xml_ import to_ele
 import logging
-import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from netconf_utils import  send_rpc
+from read_file import process_file
+from dotenv import load_dotenv
+
+
 
 # 配置日志级别和格式，包含时间戳，并将日志信息写入文件
 logging.basicConfig(
@@ -12,8 +17,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# 读取配置文件
-config = pd.read_csv('devices.csv')
+# 加载环境变量
+load_dotenv()
 
 # 获取当前版本信息的 RPC
 get_version_rpc = """
@@ -40,20 +45,12 @@ def check_version(m):
     return None
 
 
-def test(row):
+def main(device_info):
+    name, host, port, username, password = device_info
 
-    name = row['name']
-    host = row['host']
-    port = int(row['port'])
-    username = row['username']
-    password = row['password']
-
-    target_version = [
-        'flash:/s5130s_ei-cmw710-boot-r6357.bin',
-        'flash:/s5130s_ei-cmw710-system-r6357.bin',
-        'flash:/s5130s_ei-cmw710-freeradius-r6357.bin',
-        'flash:/s5130s_ei-cmw710-grpcpkg-r6357.bin'
-    ]
+    target_version = os.getenv("TARGET_VERSION")
+    if target_version:
+        target_version = target_version.split(',')
 
     # 连接设备并检查版本
     with manager.connect(
@@ -68,16 +65,17 @@ def test(row):
 
         if current_version_files:
             if not all(file in current_version_files for file in target_version):
-                logger.info(f"{name} ({host})需要升级")
+                logger.info(f"{username} ({host})需要升级")
             else:
-                logger.info(f"{name} ({host})不需要升级")
+                logger.info(f"{username} ({host})不需要升级")
         else:
-            logger.error(f"{name} ({host})无法获取当前版本信息")
+            logger.error(f"{username} ({host})无法获取当前版本信息")
 
 
 if __name__ == '__main__':
+    devices_info = process_file('devices.csv')
     with ThreadPoolExecutor(max_workers=30) as executor:
-        futures = [executor.submit(test, row) for idx, row in config.iterrows()]
+        futures = [executor.submit(main, device_info) for device_info in devices_info]
         for future in as_completed(futures):
             try:
                 future.result()
