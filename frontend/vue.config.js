@@ -1,4 +1,5 @@
 const path = require('path');
+const { VuetifyLoaderPlugin } = require('vuetify-loader');
 
 module.exports = {
   devServer: {
@@ -22,7 +23,10 @@ module.exports = {
       alias: {
         '@': path.resolve(__dirname, 'src')
       }
-    }
+    },
+    plugins: [
+      new VuetifyLoaderPlugin()
+    ]
   },
   css: {
     loaderOptions: {
@@ -35,9 +39,6 @@ module.exports = {
             require('autoprefixer')
           ]
         }
-      },
-      sass: {
-        additionalData: `@import "~vuetify/src/styles/styles.sass";`
       }
     }
   }

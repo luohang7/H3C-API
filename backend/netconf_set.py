@@ -36,7 +36,7 @@ def configure_netconf_via_telnet(host, username, password):
 
         if command == 'netconf ssh server enable':
             logger.info("等待命令执行完成...")
-            time.sleep(20)  # 等待10秒以确保命令执行完成
+            time.sleep(20)  # 等待20秒以确保命令执行完成
 
         time.sleep(1)
         output = tn.read_very_eager().decode('ascii')
