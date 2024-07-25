@@ -4,10 +4,12 @@ import subprocess
 import logging
 import sys
 from flask_socketio import SocketIO, emit
+from flask_cors import CORS
 
 app = Flask(__name__)
 process = None  # 用于跟踪当前运行的进程
-socketio = SocketIO(app)  # 确保这里正确初始化
+CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # 设置日志
 logging.basicConfig(level=logging.DEBUG)
@@ -19,6 +21,8 @@ if not os.path.exists(UPLOAD_FOLDER):
 @app.route('/run_script', methods=['POST'])
 def run_script():
     global process
+    if process is not None:
+        return jsonify({"error": "已经有一个脚本在运行"}), 400
     script = request.json.get('script')
     python_interpreter = sys.executable
 
@@ -33,14 +37,19 @@ def run_script():
         socketio.start_background_task(target=stream_output, process=process)
         return jsonify({"message": "脚本启动成功"})
     except Exception as e:
+        process = None
         return jsonify({"错误": str(e)}), 500
+
+def background_emit(event, data):
+    with app.app_context():
+        socketio.emit(event, data)
 
 def stream_output(process):
     for line in process.stdout:
-        socketio.emit('脚本输出', {'output': line})
+        socketio.start_background_task(background_emit, '脚本输出', {'output': line})
     process.stdout.close()
     process.wait()
-    socketio.emit('脚本输出', {'output': '运行完毕'})
+    socketio.start_background_task(background_emit, '脚本输出', {'output': '运行完毕'})
 
 @app.route('/stop_script', methods=['POST'])
 def stop_script():
@@ -70,5 +79,5 @@ def upload_csv():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
 

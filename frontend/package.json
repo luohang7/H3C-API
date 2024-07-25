@@ -1,0 +1,28 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.5",
+    "vue": "^2.7.16",
+    "vue-router": "^3.5.3",
+    "vue-socket-io": "^0.3.2",
+    "vue-socket.io": "^3.0.10",
+    "vuetify": "^2.6.6"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "^3.3.1",
+    "autoprefixer": "^10.4.0",
+    "css-loader": "^5.2.7",
+    "sass": "^1.32.12",
+    "sass-loader": "^10.2.0",
+    "style-loader": "^2.0.0",
+    "vue-loader": "^17.4.2",
+    "vuetify-loader": "^1.7.2"
+  }
+}

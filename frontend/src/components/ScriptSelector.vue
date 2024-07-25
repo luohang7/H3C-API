@@ -10,6 +10,10 @@
       ></v-select>
       <v-btn @click="runScript" color="primary" class="mx-2">运行</v-btn>
       <v-btn @click="stopScript" color="error" class="mx-2">停止</v-btn>
+      <div v-if="scriptOutput">
+        <h2>脚本输出</h2>
+        <pre>{{ scriptOutput }}</pre>
+      </div>
     </v-container>
   </v-app>
 </template>
@@ -22,8 +26,18 @@ export default {
       scripts: [
         {text: '检查版本', value: 'check_version'},
         {text: '升级设备', value: 'upgrade_device'}
-      ]
+      ],
+      scriptOutput: ''
     };
+  },
+  mounted() {
+    this.$socket.on('connect', () => {
+      console.log('成功连接到 WebSocket');
+    });
+    this.$socket.on('脚本输出', (data) => {
+      console.log('输出:', data);
+      this.scriptOutput += data.output + '\n';
+    });
   },
   methods: {
     async runScript() {
