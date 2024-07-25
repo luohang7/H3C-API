@@ -2,18 +2,18 @@
   <v-app>
     <div>
       <v-file-input
-        label="Select CSV file"
+        label="请按此文件名devices.csv上传文件"
         @change="handleFileUpload"
       ></v-file-input>
-      <v-btn @click="uploadFile">Upload</v-btn>
+      <v-btn @click="uploadFile">上传</v-btn>
 
       <v-dialog v-model="showSuccessMessage" max-width="290">
         <v-card>
-          <v-card-title class="headline">Upload Success</v-card-title>
-          <v-card-text>Your file has been uploaded successfully!</v-card-text>
+          <v-card-title class="headline">上传成功</v-card-title>
+          <v-card-text>您的文件已成功上传！</v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn color="green darken-1" text @click="closeModal">Close</v-btn>
+            <v-btn color="green darken-1" text @click="closeModal">关闭</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -35,7 +35,7 @@ export default {
     },
     async uploadFile() {
       if (!this.selectedFile) {
-        console.error('No file selected');
+        console.error('没有选择文件');
         return;
       }
       const formData = new FormData();
@@ -48,14 +48,14 @@ export default {
         });
 
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error('网络响应不正常');
         }
 
         const data = await response.json();
-        console.log('File uploaded successfully', data);
-        this.showSuccessMessage = true;  // 显示成功消息
+        console.log('文件上传成功', data);
+        this.showSuccessMessage = true;
       } catch (error) {
-        console.error('Error uploading file:', error);
+        console.error('文件上传出错:', error);
       }
     },
     closeModal() {
