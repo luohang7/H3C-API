@@ -31,10 +31,8 @@ def run_script():
             return jsonify({"error": "错误的脚本名称"}), 400
 
         socketio.start_background_task(target=stream_output, process=process)
-        'process = None'
         return jsonify({"message": "脚本启动成功"})
     except Exception as e:
-        process = None
         return jsonify({"错误": str(e)}), 500
 
 def stream_output(process):
