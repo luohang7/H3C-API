@@ -33,8 +33,8 @@ def run_script():
             process = subprocess.Popen([python_interpreter, 'upgrade_device_new.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
         else:
             return jsonify({"error": "错误的脚本名称"}), 400
-
-        socketio.start_background_task(target=stream_output, process=process)
+        logging.info("启动脚本: " + script)  # 添加日志
+        socketio.start_background_task(target=stream_output, proc=process)
         return jsonify({"message": "脚本启动成功"})
     except Exception as e:
         process = None
@@ -44,12 +44,30 @@ def background_emit(event, data):
     with app.app_context():
         socketio.emit(event, data)
 
-def stream_output(process):
-    for line in process.stdout:
-        socketio.start_background_task(background_emit, '脚本输出', {'output': line})
-    process.stdout.close()
-    process.wait()
-    socketio.start_background_task(background_emit, '脚本输出', {'output': '运行完毕'})
+def stream_output(proc):
+    global process
+    logging.info("开始读取脚本输出")  # 确保流输出开始
+    while True:
+        stdout_line = proc.stdout.readline()
+        stderr_line = proc.stderr.readline()
+
+        if stdout_line:
+            logging.info(f"脚本输出: {stdout_line.strip()}")  # 确保在服务器端也能看到输出
+            socketio.emit('脚本输出', {'output': stdout_line.strip()})
+
+        if stderr_line:
+            logging.error(f"脚本错误输出: {stderr_line.strip()}")  # 确保在服务器端也能看到错误输出
+            socketio.emit('脚本输出', {'output': stderr_line.strip()})
+
+        if not stdout_line and not stderr_line:
+            break
+
+    proc.stdout.close()
+    proc.stderr.close()
+    proc.wait()
+    logging.info("脚本运行完毕")  # 添加日志
+    socketio.emit('脚本输出', {'output': '运行完毕'})
+    process = None  # 脚本运行结束后重置 process
 
 @app.route('/stop_script', methods=['POST'])
 def stop_script():

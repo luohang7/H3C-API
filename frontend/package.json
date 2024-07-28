@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
+    "serve": "set NODE_OPTIONS=--openssl-legacy-provider && vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },
@@ -12,9 +12,12 @@
     "vue": "^2.7.16",
     "vue-router": "^3.5.3",
     "vue-socket.io": "^3.0.10",
-    "vuetify": "^2.6.6"
+    "vue-socket.io-extended": "^4.2.0",
+    "vuetify": "^2.6.6",
+    "yarn": "^1.22.22"
   },
   "devDependencies": {
+    "@vue/cli-service": "^5.0.8",
     "autoprefixer": "^10.4.0",
     "css-loader": "^5.2.7",
     "sass": "^1.32.12",

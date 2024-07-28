@@ -31,10 +31,13 @@ export default {
     };
   },
   mounted() {
-    this.$socket.on('connect', () => {
+    this.$socket.client.on('connect', () => {
       console.log('成功连接到 WebSocket');
     });
-    this.$socket.on('脚本输出', (data) => {
+    this.$socket.client.on('disconnect', () => {
+      console.log('WebSocket 连接已断开');
+    });
+    this.$socket.client.on('脚本输出', (data) => {
       console.log('输出:', data);
       this.scriptOutput += data.output + '\n';
     });
