@@ -1,21 +1,15 @@
 <template>
-  <div>
-    <ScriptSelector />
-    <FileUpload />
-  </div>
+  <v-container>
+    <h1>欢迎使用设备管理系统</h1>
+  </v-container>
 </template>
 
 <script>
-import FileUpload from '@/components/FileUpload.vue';
-import ScriptSelector from '@/components/ScriptSelector.vue';
-
 export default {
-  components: {
-    FileUpload,
-    ScriptSelector,
-  },
+  name: 'Home',
 };
 </script>
+
 <style>
 @import '~vuetify/dist/vuetify.min.css';
 </style>

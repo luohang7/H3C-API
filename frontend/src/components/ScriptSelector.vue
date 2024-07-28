@@ -43,7 +43,11 @@ export default {
     });
   },
   methods: {
+    clearOutput(){
+      this.scriptOutput = '';
+    },
     async runScript() {
+      this.clearOutput();
       try {
         const response = await fetch('/run_script', {
           method: 'POST',
