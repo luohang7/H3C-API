@@ -23,6 +23,7 @@ module.exports = {
       }
     }
   },
+
   configureWebpack: {
     resolve: {
       alias: {
@@ -33,6 +34,7 @@ module.exports = {
       new VuetifyLoaderPlugin()
     ]
   },
+
   css: {
     loaderOptions: {
       css: {
@@ -46,5 +48,9 @@ module.exports = {
         }
       }
     }
-  }
+  },
+
+  transpileDependencies: [
+    'vuetify'
+  ]
 };
