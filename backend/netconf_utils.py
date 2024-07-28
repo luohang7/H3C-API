@@ -2,13 +2,6 @@ from ncclient.xml_ import to_ele
 import logging
 from ncclient.operations.errors import TimeoutExpiredError
 
-
-# 配置日志级别和格式，包含时间戳，并将日志信息写入文件
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s:%(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
 logger = logging.getLogger(__name__)
 
 def send_rpc(m, rpc, description):
