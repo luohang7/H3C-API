@@ -4,25 +4,28 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from netconf_utils import  send_rpc
 from read_file import process_file
 from custom_logging import setup_logging
+import sys
 
 setup_logging()
 logger = logging.getLogger(__name__)
 
-
-# 文件传输命令，使用临时 channel
-file_transfer_rpc = """
+def generate_file_transfer_rpc(tftp_server, file_list):
+    commands = [f"tftp {tftp_server} get {file.strip()}" for file in file_list]
+    command_string = "\n    ".join(commands)
+    return f"""
 <CLI xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
   <Configuration exec-use-channel="false">
     quit
-    tftp 192.168.36.2 get S5130S_EI-CMW710-R6357.ipe 
-    tftp 192.168.36.2 get s5130s_ei-cmw710-freeradius-r6357.bin 
-    tftp 192.168.36.2 get s5130s_ei-cmw710-grpcpkg-r6357.bin
+    {command_string}
   </Configuration>
 </CLI>
 """
-def main(device_info):
+
+def main(device_info, tftp_server, file_list):
 
     name, host, port, username, password = device_info
+
+    file_transfer_rpc = generate_file_transfer_rpc(tftp_server, file_list)
 
     with manager.connect(
             host=host,
@@ -36,9 +39,11 @@ def main(device_info):
         send_rpc(m, file_transfer_rpc, "file transfer")
 
 if __name__ == '__main__':
-    devices_info = process_file('devices.csv')
+    tftp_server = sys.argv[1]
+    file_list = sys.argv[2:]
+    devices_info = process_file('devices_upgrade.csv')
     with ThreadPoolExecutor(max_workers=30) as executor:
-        futures = [executor.submit(main, device_info) for device_info in devices_info]
+        futures = [executor.submit(main, device_info, tftp_server, file_list) for device_info in devices_info]
         for future in as_completed(futures):
             try:
                 future.result()

@@ -8,8 +8,31 @@
         label="选择脚本"
         outlined
       ></v-select>
+
+      <div v-if="selectedScript === 'file_transfer'">
+        <v-text-field
+          v-model="tftpServer"
+          label="TFTP服务器地址"
+          outlined
+        ></v-text-field>
+        <v-textarea
+          v-model="fileList"
+          label="文件列表 (每行一个文件名)"
+          outlined
+        ></v-textarea>
+      </div>
+
+      <div v-if="selectedScript === 'check_version'">
+        <v-text-field
+            v-model="targetVersion"
+            label="目标版本(例如:S5130S_EI-CMW710-R6357)"
+            outlined
+        ></v-text-field>
+      </div>
+
       <v-btn @click="runScript" color="primary" class="mx-2">运行</v-btn>
       <v-btn @click="stopScript" color="error" class="mx-2">停止</v-btn>
+
       <div v-if="scriptOutput" id="output">
         <h2>脚本输出</h2>
         <pre>{{ scriptOutput }}</pre>
@@ -22,12 +45,18 @@
 export default {
   data() {
     return {
-      selectedScript: 'check_version',
+      selectedScript: 'netconf_set',
       scripts: [
-        {text: '检查版本', value: 'check_version'},
-        {text: '升级设备', value: 'upgrade_device'}
+        { text: '配置netconf', value: 'netconf_set' },
+        { text: '检查版本', value: 'check_version' },
+        { text: '生成升级表格', value: 'extract_device_ip' },
+        { text: '获取升级包', value: 'file_transfer' },
+        { text: '升级设备', value: 'upgrade_device' },
       ],
-      scriptOutput: ''
+      tftpServer: '',
+      fileList: '',
+      scriptOutput: '',
+      targetVersion: '',
     };
   },
   mounted() {
@@ -42,7 +71,9 @@ export default {
       this.scriptOutput += data.output + '\n';
        this.$nextTick(() => {
         const outputDiv = this.$el.querySelector('#output');
-        outputDiv.scrollTop = outputDiv.scrollHeight;
+         if (outputDiv) {
+           outputDiv.scrollTop = outputDiv.scrollHeight;
+         }
       });
     });
   },
@@ -53,12 +84,25 @@ export default {
     async runScript() {
       this.clearOutput();
       try {
+        const requestBody = {
+          script: this.selectedScript
+        };
+
+        if (this.selectedScript === 'file_transfer') {
+          requestBody.tftpServer = this.tftpServer;
+          requestBody.fileList = this.fileList.split('\n').map(file => file.trim()).join(','); // 将换行符转换为逗号，并去除每行两端的空格
+        }
+
+        if (this.selectedScript === 'check_version') {
+          requestBody.targetVersion = this.targetVersion;
+        }
+
         const response = await fetch('/run_script', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({script: this.selectedScript})
+          body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {

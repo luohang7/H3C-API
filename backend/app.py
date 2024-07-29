@@ -25,7 +25,7 @@ class ScriptManager:
         self.process = None
         self.log_queue = Queue()
 
-    def start_process(self, script_name):
+    def start_process(self, script_name, args=[]):
         python_interpreter = sys.executable
         script_mapping = {
             'check_version': 'check_version.py',
@@ -38,7 +38,7 @@ class ScriptManager:
         if not script_file:
             raise ValueError("错误的脚本名称")
         self.process = subprocess.Popen(
-            [python_interpreter, '-u', script_file],
+            [python_interpreter, '-u', script_file] + args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             bufsize=1,
@@ -87,8 +87,15 @@ script_manager = ScriptManager()
 def run_script():
     global process  # 声明为全局变量
     script = request.json.get('script')
+    tftp_server = request.json.get('tftpServer')
+    file_list = request.json.get('fileList')
+
     try:
-        process = script_manager.start_process(script)
+        args = []
+        if script == 'file_transfer':
+            args = [tftp_server] + file_list.split(',')
+
+        process = script_manager.start_process(script, args)
         logging.info(f"启动脚本: {script}")
 
         # 启动新线程来处理进程的输出
