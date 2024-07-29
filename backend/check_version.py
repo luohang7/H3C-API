@@ -3,7 +3,7 @@ from ncclient import manager
 from ncclient.xml_ import to_ele
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from netconf_utils import  send_rpc
+from netconf_utils import send_rpc
 from read_file import process_file
 from dotenv import load_dotenv
 
