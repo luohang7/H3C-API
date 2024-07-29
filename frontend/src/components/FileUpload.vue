@@ -2,7 +2,7 @@
   <v-app>
     <div>
       <v-file-input
-        label="请按此文件名devices.csv上传文件"
+        label="请按此文件名devices.csv上传设备列表"
         @change="handleFileUpload"
       ></v-file-input>
       <v-btn @click="uploadFile">上传</v-btn>
