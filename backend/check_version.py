@@ -1,5 +1,4 @@
 import os
-import sys
 from ncclient import manager
 from ncclient.xml_ import to_ele
 import logging
@@ -8,9 +7,6 @@ from netconf_utils import send_rpc
 from read_file import process_file
 from dotenv import load_dotenv
 from custom_logging import setup_logging
-
-# 禁用缓冲
-sys.stdout.reconfigure(line_buffering=True)
 
 # 配置日志级别和格式，包含时间戳，并将日志信息写入文件
 setup_logging(log_file='check_version.log')
@@ -70,7 +66,6 @@ def main(device_info):
         else:
             logger.error(f"{name} ({host})无法获取当前版本信息")
 
-
 if __name__ == '__main__':
     devices_info = process_file('devices.csv')
     with ThreadPoolExecutor(max_workers=30) as executor:
@@ -78,7 +73,5 @@ if __name__ == '__main__':
         for future in as_completed(futures):
             try:
                 future.result()
-                sys.stdout.flush()
-                sys.stderr.flush()
             except Exception as e:
                 logger.error(f"执行设备处理期间出错: {e}")
