@@ -10,7 +10,7 @@
       ></v-select>
       <v-btn @click="runScript" color="primary" class="mx-2">运行</v-btn>
       <v-btn @click="stopScript" color="error" class="mx-2">停止</v-btn>
-      <div v-if="scriptOutput">
+      <div v-if="scriptOutput" id="output">
         <h2>脚本输出</h2>
         <pre>{{ scriptOutput }}</pre>
       </div>
@@ -40,6 +40,10 @@ export default {
     this.$socket.client.on('脚本输出', (data) => {
       console.log('输出:', data);
       this.scriptOutput += data.output + '\n';
+       this.$nextTick(() => {
+        const outputDiv = this.$el.querySelector('#output');
+        outputDiv.scrollTop = outputDiv.scrollHeight;
+      });
     });
   },
   methods: {
@@ -92,5 +96,14 @@ export default {
 
 h1 {
   margin-bottom: 20px;
+}
+#output {
+  height: 400px;
+  overflow-y: auto;
+  background-color: #f5f5f5;
+  padding: 10px;
+  border: 1px solid #ccc;
+  margin-top: 20px;
+  white-space: pre-wrap; /* 保持换行 */
 }
 </style>

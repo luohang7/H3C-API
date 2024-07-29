@@ -3,16 +3,11 @@ import telnetlib
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from custom_logging import setup_logging
 
-# 配置日志级别和格式，包含时间戳，并将日志信息写入文件
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s:%(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+setup_logging()
 logger = logging.getLogger(__name__)
-def configure_netconf_via_telnet(host, username, password):
-    logger.info("开始 Telnet 连接以配置 NETCONF...")
+def configure_netconf_via_telnet(name, host, username, password):
     tn = telnetlib.Telnet(host)
 
     tn.read_until(b"Login:", timeout=10)
@@ -31,29 +26,29 @@ def configure_netconf_via_telnet(host, username, password):
     ]
 
     for command in commands:
-        logger.info(f"执行命令: {command}")
+        logger.info(f"{name} ({host})执行命令: {command}")
         tn.write(command.encode('ascii') + b"\n")
 
         if command == 'netconf ssh server enable':
-            logger.info("等待命令执行完成...")
+            logger.debug("等待命令执行完成...")
             time.sleep(20)  # 等待20秒以确保命令执行完成
 
         time.sleep(1)
         output = tn.read_very_eager().decode('ascii')
-        logger.info(f"命令输出: {output}")
+        logger.debug(f"{name} ({host})命令输出: {output}")
 
         if "% Unrecognized command found at '^' position." in output:
-            logger.error(f"命令执行失败: {command}")
+            logger.error(f"{name} ({host})命令执行失败: {command}")
             break
 
     tn.close()
-    logger.info("Telnet 配置 NETCONF 完成.")
+    logger.info(f"{name} ({host})Telnet 配置 NETCONF 完成.")
 
 
 def main(device_info):
     name, host, port, username, password = device_info
     #配置 NETCONF
-    configure_netconf_via_telnet(host, username, password)
+    configure_netconf_via_telnet(name, host, username, password)
 
 if __name__ == '__main__':
     devices_info = process_file('devices.csv')

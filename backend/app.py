@@ -28,9 +28,9 @@ def run_script():
 
     try:
         if script == 'check_version':
-            process = subprocess.Popen([python_interpreter, 'check_version.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
+            process = subprocess.Popen([python_interpreter, '-u', 'check_version.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True, text=True, encoding='utf-8')
         elif script == 'upgrade_device':
-            process = subprocess.Popen([python_interpreter, 'upgrade_device_new.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
+            process = subprocess.Popen([python_interpreter, '-u', 'upgrade_device_new.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True, text=True, encoding='utf-8')
         else:
             return jsonify({"error": "错误的脚本名称"}), 400
         logging.info("启动脚本: " + script)  # 添加日志
@@ -54,12 +54,15 @@ def stream_output(proc):
         if stdout_line:
             logging.info(f"脚本输出: {stdout_line.strip()}")  # 确保在服务器端也能看到输出
             socketio.emit('脚本输出', {'output': stdout_line.strip()})
+            sys.stdout.flush()  # 确保日志立即刷新
 
         if stderr_line:
             logging.error(f"脚本错误输出: {stderr_line.strip()}")  # 确保在服务器端也能看到错误输出
             socketio.emit('脚本输出', {'output': stderr_line.strip()})
+            sys.stdout.flush()  # 确保日志立即刷新
 
         if not stdout_line and not stderr_line:
+            logging.info("未读取到新行")
             break
 
     proc.stdout.close()

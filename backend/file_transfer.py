@@ -3,13 +3,9 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from netconf_utils import  send_rpc
 from read_file import process_file
+from custom_logging import setup_logging
 
-# 配置日志级别和格式，包含时间戳，并将日志信息写入文件
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s:%(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+setup_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -36,7 +32,7 @@ def main(device_info):
             hostkey_verify=False,
             timeout=600  # 设置更长的超时时间
     ) as m:
-        logger.info("发送tftp获取文件命令...")
+        logger.info(f"{name} ({host})发送tftp获取文件命令...")
         send_rpc(m, file_transfer_rpc, "file transfer")
 
 if __name__ == '__main__':
