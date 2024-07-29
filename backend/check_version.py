@@ -1,3 +1,4 @@
+import os
 from ncclient import manager
 from ncclient.xml_ import to_ele
 import logging
@@ -24,11 +25,13 @@ get_version_rpc = """
 """
 
 def extract_version(file_name):
-    """提取文件名中的版本号，忽略大小写"""
-    version = file_name.lower().replace('boot', '').replace('system', '').strip('-._ ')
-    return version
+    """提取文件名中的型号和版本号，忽略大小写"""
+    parts = file_name.lower().replace('flash:/', '').split('-')
+    model = parts[0]  # 获取前面的s5130s_ei部分
+    version = '-'.join(parts[1:])  # 获取版本号部分
+    return model, version
 
-def check_version(m, name, host, target_version):
+def check_version(m, name, host, target_model, target_version):
     response = send_rpc(m, get_version_rpc, "获取版本信息")
     if response:
         root = to_ele(response.xml)
@@ -46,19 +49,26 @@ def check_version(m, name, host, target_version):
             # 比较当前版本与目标版本
             target_version = target_version.lower()
             need_upgrade = False
-            for current_version in current_versions:
-                if current_version.split('-r')[-1] < target_version.split('-r')[-1]:
-                    need_upgrade = True
-                    break
+            prefix_model_found = False
 
-            if need_upgrade:
+            for model, current_version in current_versions:
+                if model == target_model:
+                    prefix_model_found = True
+                    if current_version.split('-r')[-1] < target_version.split('-r')[-1]:
+                        need_upgrade = True
+                        break
+
+            if not prefix_model_found:
+                logger.info(f"{name} ({host})非{target_model}型号")
+            elif need_upgrade:
                 logger.info(f"{name} ({host})需要升级")
             else:
                 logger.info(f"{name} ({host})不需要升级")
         else:
             logger.error(f"{name} ({host})无法获取当前版本信息")
 
-def main(device_info, target_version):
+
+def main(device_info, target_model, target_version):
     name, host, port, username, password = device_info
 
     # 连接设备并检查版本
@@ -69,14 +79,14 @@ def main(device_info, target_version):
             password=password,
             hostkey_verify=False,
     ) as m:
-
-        check_version(m, name, host, target_version)
+        check_version(m, name, host, target_model, target_version)
 
 if __name__ == '__main__':
     devices_info = process_file('devices.csv')
     target_version = sys.argv[1]  # 从命令行参数中获取目标版本
+    target_model = target_version.split('-')[0].lower()  # 提取型号前缀部分
     with ThreadPoolExecutor(max_workers=30) as executor:
-        futures = [executor.submit(main, device_info, target_version) for device_info in devices_info]
+        futures = [executor.submit(main, device_info, target_model, target_version) for device_info in devices_info]
         for future in as_completed(futures):
             try:
                 future.result()
