@@ -38,9 +38,14 @@
         <pre>{{ scriptOutput }}</pre>
       </div>
 
-      <div v-if="csvContent" id="csv-output">
-        <h2>需升级设备列表</h2>
-        <div v-html="csvAsHtmlTable"></div>
+      <div v-if="csvContent && showCsvContent">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>需升级设备列表</h2>
+          <v-btn icon @click="showCsvContent = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </div>
+        <div v-html="csvAsHtmlTable" class="csv-table"></div>
       </div>
 
     </v-container>
@@ -63,6 +68,7 @@ export default {
       scriptOutput: '',
       targetVersion: '',
       csvContent: '',
+      showCsvContent: true, // 用于控制CSV内容的显示和隐藏
     };
   },
   mounted() {
@@ -146,6 +152,7 @@ export default {
         }
         const csv = await response.text();
         this.csvContent = csv;
+        this.showCsvContent = true; // 显示CSV内容
       } catch (error) {
         console.error('获取CSV文件时出错:', error);
       }
@@ -194,14 +201,10 @@ h1 {
   margin-top: 20px;
   white-space: pre-wrap; /* 保持换行 */
 }
-#csv-output {
-  height: 400px;
-  overflow-y: auto;
-  background-color: #f5f5f5;
-  padding: 10px;
-  border: 1px solid #ccc;
+.csv-table {
+  height: 300px; /* 设置高度 */
+  overflow-y: auto; /* 添加垂直滚动条 */
   margin-top: 20px;
-  white-space: pre-wrap; /* 保持换行 */
 }
 table {
   width: 100%;
