@@ -10,8 +10,6 @@ def send_rpc(m, rpc, description):
         logger.debug(f"{description} RPC 回复: {response.xml}")
         return response
     except TimeoutExpiredError as e:
-        logger.error(f"{description} 操作期间出错: {e}，继续执行剩余操作。")
         return None
     except Exception as e:
-        logger.error(f"{description} 操作期间出错: {e}")
         return None

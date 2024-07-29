@@ -1,6 +1,6 @@
 import os
 import re
-
+import pandas as pd
 
 def extract_device_ip(log_file='check_version.log', output_dir='uploads', output_file='devices_upgrade.csv'):
     # 读取 .log 文件中的数据
@@ -16,7 +16,15 @@ def extract_device_ip(log_file='check_version.log', output_dir='uploads', output
     # 使用集合去重
     unique_matches = set(matches)
 
-    # 确保目录存在
+    # 检查 devices.csv 文件是否存在
+    devices_file_path = os.path.join(output_dir, 'devices.csv')
+    if not os.path.exists(devices_file_path):
+        raise FileNotFoundError(f"{devices_file_path} 文件未找到，请确保文件存在并重试。")
+
+    # 读取 devices.csv 文件
+    devices_df = pd.read_csv(devices_file_path)
+
+    # 确保输出目录存在
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -25,6 +33,7 @@ def extract_device_ip(log_file='check_version.log', output_dir='uploads', output
     with open(output_file_path, 'w', encoding='utf-8') as output_file:
         output_file.write("name,host,port,username,password\n")  # 写入CSV表头
         for device, ip in unique_matches:
-            output_file.write(f"{device.strip()},{ip},830,lpssy,Lpssy123\n")
+            device_info = devices_df[devices_df['host'] == ip].iloc[0]
+            output_file.write(f"{device.strip()},{ip},{device_info['port']},{device_info['username']},{device_info['password']}\n")
 
     print(f"需升级设备列表已生成: {output_file_path}")
