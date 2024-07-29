@@ -1,9 +1,9 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import subprocess
 import logging
 import sys
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
 from flask_cors import CORS
 from queue import Queue
 from threading import Thread
@@ -32,7 +32,6 @@ class ScriptManager:
             'upgrade_device': 'upgrade_device_new.py',
             'netconf_set': 'netconf_set.py',
             'file_transfer': 'file_transfer.py',
-            'extract_device_ip': 'extract_device_ip.py',
         }
         script_file = script_mapping.get(script_name)
         if not script_file:
@@ -136,6 +135,14 @@ def upload_csv():
         file.save(filename)
 
         return jsonify({"message": "文件上传成功"}), 200
+
+# 添加用于下载 CSV 文件的端点
+@app.route('/download_csv', methods=['GET'])
+def download_csv():
+    try:
+        return send_file('uploads/devices_upgrade.csv', as_attachment=True)
+    except Exception as e:
+        return str(e), 500
 
 
 if __name__ == '__main__':

@@ -37,6 +37,12 @@
         <h2>脚本输出</h2>
         <pre>{{ scriptOutput }}</pre>
       </div>
+
+      <div v-if="csvContent" id="csv-output">
+        <h2>需升级设备列表</h2>
+        <div v-html="csvAsHtmlTable"></div>
+      </div>
+
     </v-container>
   </v-app>
 </template>
@@ -49,7 +55,6 @@ export default {
       scripts: [
         { text: '配置netconf', value: 'netconf_set' },
         { text: '检查版本', value: 'check_version' },
-        { text: '生成升级表格', value: 'extract_device_ip' },
         { text: '获取升级包', value: 'file_transfer' },
         { text: '升级设备', value: 'upgrade_device' },
       ],
@@ -57,6 +62,7 @@ export default {
       fileList: '',
       scriptOutput: '',
       targetVersion: '',
+      csvContent: '',
     };
   },
   mounted() {
@@ -69,6 +75,9 @@ export default {
     this.$socket.client.on('脚本输出', (data) => {
       console.log('输出:', data);
       this.scriptOutput += data.output + '\n';
+      if (data.output === '运行完毕' && this.selectedScript === 'check_version') {
+        this.fetchCSV();
+      }
        this.$nextTick(() => {
         const outputDiv = this.$el.querySelector('#output');
          if (outputDiv) {
@@ -91,9 +100,7 @@ export default {
         if (this.selectedScript === 'file_transfer') {
           requestBody.tftpServer = this.tftpServer;
           requestBody.fileList = this.fileList.split('\n').map(file => file.trim()).join(','); // 将换行符转换为逗号，并去除每行两端的空格
-        }
-
-        if (this.selectedScript === 'check_version') {
+        } else if (this.selectedScript === 'check_version') {
           requestBody.targetVersion = this.targetVersion;
         }
 
@@ -130,8 +137,45 @@ export default {
       } catch (error) {
         console.error('停止脚本时出错:', error);
       }
-    }
+    },
+    async fetchCSV() {
+      try {
+        const response = await fetch('/download_csv');
+        if (!response.ok) {
+          throw new Error('无法获取CSV文件');
+        }
+        const csv = await response.text();
+        this.csvContent = csv;
+      } catch (error) {
+        console.error('获取CSV文件时出错:', error);
+      }
+    },
+  },
+  computed: {
+  csvAsHtmlTable() {
+    const rows = this.csvContent.split('\n').filter(row => row.trim() !== '');
+    const headers = rows[0].split(',');
+    const bodyRows = rows.slice(1);
+
+    let table = '<table border="1" cellspacing="0" cellpadding="5">';
+    table += '<thead><tr>';
+    headers.forEach(header => {
+      table += `<th>${header}</th>`;
+    });
+    table += '</tr></thead>';
+    table += '<tbody>';
+    bodyRows.forEach(row => {
+      table += '<tr>';
+      row.split(',').forEach(cell => {
+        table += `<td>${cell}</td>`;
+      });
+      table += '</tr>';
+    });
+    table += '</tbody></table>';
+
+    return table;
   }
+}
 };
 </script>
 
@@ -149,5 +193,26 @@ h1 {
   border: 1px solid #ccc;
   margin-top: 20px;
   white-space: pre-wrap; /* 保持换行 */
+}
+#csv-output {
+  height: 400px;
+  overflow-y: auto;
+  background-color: #f5f5f5;
+  padding: 10px;
+  border: 1px solid #ccc;
+  margin-top: 20px;
+  white-space: pre-wrap; /* 保持换行 */
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 8px;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+th {
+  background-color: #f2f2f2;
 }
 </style>

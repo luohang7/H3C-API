@@ -1,4 +1,3 @@
-import os
 from ncclient import manager
 from ncclient.xml_ import to_ele
 import logging
@@ -7,6 +6,7 @@ from netconf_utils import send_rpc
 from read_file import process_file
 from custom_logging import setup_logging
 import sys
+from extract_device_ip import extract_device_ip
 
 # 配置日志级别和格式，包含时间戳，并将日志信息写入文件
 setup_logging(log_file='check_version.log')
@@ -92,3 +92,5 @@ if __name__ == '__main__':
                 future.result()
             except Exception as e:
                 logger.error(f"执行设备处理期间出错: {e}")
+    # 检查版本后执行 extract_device_ip 函数
+    extract_device_ip()
