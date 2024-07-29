@@ -6,32 +6,94 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from netconf_utils import send_rpc
 from read_file import process_file
 from custom_logging import setup_logging
+import os
+import ast
 
 
 setup_logging()
 logger = logging.getLogger(__name__)
+def read_temp_files():
+    ipe_file = None
+    bin_files = []
 
-# 固件升级的 RPC
-firmware_upgrade_rpc = """
-<action xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-  <top xmlns="http://www.h3c.com/netconf/action:1.0">
-    <Package>
-      <SetBootImage>
-        <DeviceNode>
-          <Chassis>0</Chassis>
-          <Slot>1</Slot>
-          <CPUID>0</CPUID>
-        </DeviceNode>
-        <IPEFileName>flash:/S5130S_EI-CMW710-R6357.ipe</IPEFileName>
-        <Type>1</Type>
-        <OverwriteLocalFile>true</OverwriteLocalFile>
-        <DeleteIPEFile>true</DeleteIPEFile>
-      </SetBootImage>
-    </Package>
-  </top>
-</action>
-"""
+    with open('temp_files.txt', 'r') as temp_file:
+        for line in temp_file:
+            key, value = line.strip().split('=')
+            if key == 'ipe_file':
+                ipe_file = value
+            elif key == 'bin_file':
+                bin_files.append(value)
 
+    return ipe_file, bin_files
+def read_current_version_files():
+    current_version_files = {}
+    with open('current_version_files.txt', 'r') as f:
+        for line in f:
+            name, host, files_str = line.strip().split(',', 2)
+            files_list = ast.literal_eval(files_str)
+            current_version_files[host] = files_list
+    return current_version_files
+def construct_rpc(ipe_file, bin_files):
+    # 构造固件升级的 RPC
+    firmware_upgrade_rpc = f"""
+    <action xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+      <top xmlns="http://www.h3c.com/netconf/action:1.0">
+        <Package>
+          <SetBootImage>
+            <DeviceNode>
+              <Chassis>0</Chassis>
+              <Slot>1</Slot>
+              <CPUID>0</CPUID>
+            </DeviceNode>
+            <IPEFileName>flash:/{ipe_file}</IPEFileName>
+            <Type>1</Type>
+            <OverwriteLocalFile>true</OverwriteLocalFile>
+            <DeleteIPEFile>true</DeleteIPEFile>
+          </SetBootImage>
+        </Package>
+      </top>
+    </action>
+    """
+
+    # 构造安装特性包的 RPC
+    bin_files_xml = ''.join([f'<Feature>flash:/{bin_file}</Feature>' for bin_file in bin_files])
+    install_feature_rpc = f"""
+    <action xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+      <top xmlns="http://www.h3c.com/netconf/action:1.0">
+        <Package>
+          <InstallImage>
+            <Action>1</Action>
+            <ImageFiles>
+              {bin_files_xml}
+            </ImageFiles>
+            <OverwriteLocalFile>true</OverwriteLocalFile>
+          </InstallImage>
+        </Package>
+      </top>
+    </action>
+    """
+
+    return firmware_upgrade_rpc, install_feature_rpc
+
+
+def construct_delete_rpc(files_list):
+    delete_rpc = """
+    <action xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+      <top xmlns="http://www.h3c.com/netconf/action:1.0">
+        <FileSystem>
+          <Files>
+    """
+    delete_files = ''.join([f"""
+            <File>
+              <SrcName>flash:/{file}</SrcName>
+              <Operations>
+                <UnReservedDelete/>
+              </Operations>
+            </File>
+    """ for file in files_list])
+
+    delete_rpc += f"{delete_files}</Files></FileSystem></top></action>"
+    return delete_rpc
 # 保存配置的 RPC
 save_config_rpc = """
 <save xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
@@ -49,69 +111,6 @@ reboot_rpc = """
 </CLI>
 """
 
-# 删除旧文件的 RPC
-delete_system_rpc = """
-<action xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-  <top xmlns="http://www.h3c.com/netconf/action:1.0">
-    <FileSystem>
-      <Files>
-        <File>
-          <SrcName>flash:/s5130s_ei-cmw710-system-r6343p08.bin</SrcName>
-          <Operations>
-            <UnReservedDelete/>
-          </Operations>
-        </File>
-      </Files>
-    </FileSystem>
-  </top>
-</action>
-"""
-
-delete_boot_rpc = """
-<action xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-  <top xmlns="http://www.h3c.com/netconf/action:1.0">
-    <FileSystem>
-      <Files>
-        <File>
-          <SrcName>flash:/s5130s_ei-cmw710-boot-r6343p08.bin</SrcName>
-          <Operations>
-            <UnReservedDelete/>
-          </Operations>
-        </File>
-      </Files>
-    </FileSystem>
-  </top>
-</action>
-"""
-
-# 安装特性包的 RPC
-install_feature_rpc = """
-<action xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-  <top xmlns="http://www.h3c.com/netconf/action:1.0">
-    <Package>
-      <InstallImage>
-        <Action>1</Action>
-        <ImageFiles>
-          <Feature>flash:/s5130s_ei-cmw710-freeradius-r6357.bin</Feature>
-          <Feature>flash:/s5130s_ei-cmw710-grpcpkg-r6357.bin</Feature>
-        </ImageFiles>
-        <OverwriteLocalFile>true</OverwriteLocalFile>
-      </InstallImage>
-    </Package>
-  </top>
-</action>
-"""
-
-# 获取当前版本信息的 RPC
-get_version_rpc = """
-<get xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-  <filter>
-    <Package xmlns="http://www.h3c.com/netconf/data:1.0">
-      <BootLoaderList/>
-    </Package>
-  </filter>
-</get>
-"""
 def reconnect(host, port, username, password, max_retries=3, wait_time=60):
     for attempt in range(max_retries):
         logger.debug(f"尝试重新连接... 尝试次数 {attempt + 1}")
@@ -135,7 +134,14 @@ def reconnect(host, port, username, password, max_retries=3, wait_time=60):
 def main(device_info):
 
     name, host, port, username, password = device_info
-
+    # 读取文件以获取IPE和BIN文件列表
+    ipe_file, bin_files = read_temp_files()
+    # 读取文件以获取当前版本文件列表
+    current_version_files = read_current_version_files()
+    delete_files = current_version_files.get(host, [])
+    # 构造RPC请求
+    firmware_upgrade_rpc, install_feature_rpc = construct_rpc(ipe_file, bin_files)
+    delete_rpc = construct_delete_rpc(delete_files)
     try:
         # 连接设备并执行文件传输命令
         with manager.connect(
@@ -176,13 +182,9 @@ def main(device_info):
         m = reconnect(host, port, username, password)
         with m:
 
-            # 删除旧系统文件
-            logger.info(f"{name} ({host})删除旧系统文件...")
-            send_rpc(m, delete_system_rpc, "删除旧系统文件")
-
-            # 删除旧引导文件
-            logger.info(f"{name} ({host})删除旧引导文件...")
-            send_rpc(m, delete_boot_rpc, "删除旧引导文件")
+            # 删除旧文件
+            logger.info(f"{name} ({host})删除旧文件...")
+            send_rpc(m, delete_rpc, "删除旧文件")
 
             # 发送安装特性包命令
             logger.info(f"{name} ({host})发送安装特性包命令...")
@@ -203,3 +205,9 @@ if __name__ == "__main__":
                 future.result()
             except Exception as e:
                 logger.error(f"执行设备处理期间出错: {e}")
+
+    # 删除临时文件
+    if os.path.exists('temp_files.txt'):
+        os.remove('temp_files.txt')
+    elif os.path.exists('current_version_files.txt'):
+        os.remove('current_version_files.txt')

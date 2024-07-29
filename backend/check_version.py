@@ -43,8 +43,10 @@ def check_version(m, name, host, target_model, target_version):
                                      'boot' in file.lower() or 'system' in file.lower()]
             current_versions = {extract_version(file) for file in current_version_files}
 
-            # 记录当前设备版本文件列表
+            # 记录当前设备版本文件列表到文件
             logger.info(f"{name} ({host})当前设备版本文件: {all_version_files}")
+            with open('current_version_files.txt', 'a') as f:
+                f.write(f"{name},{host},{all_version_files}\n")
 
             # 比较当前版本与目标版本
             target_version = target_version.lower()

@@ -49,3 +49,13 @@ if __name__ == '__main__':
                 future.result()
             except Exception as e:
                 logger.error(f"执行设备处理期间出错: {e}")
+
+    # 保存文件名到临时文件
+    ipe_files = [file for file in file_list if file.endswith('.ipe')]
+    bin_files = [file for file in file_list if file.endswith('.bin')]
+
+    with open('temp_files.txt', 'w') as temp_file:
+        if ipe_files:
+            temp_file.write(f"ipe_file={ipe_files[0]}\n")
+        for bin_file in bin_files:
+            temp_file.write(f"bin_file={bin_file}\n")
