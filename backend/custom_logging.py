@@ -6,7 +6,7 @@ def setup_logging(level=logging.INFO, log_file=None):
     handlers = [logging.StreamHandler(sys.stdout)]
 
     if log_file:
-        handlers.append(logging.FileHandler(log_file))
+        handlers.append(logging.FileHandler(log_file, mode='w', encoding='utf-8'))
 
     logging.basicConfig(
         level=level,
