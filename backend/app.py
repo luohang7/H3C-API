@@ -89,11 +89,14 @@ def run_script():
     script = request.json.get('script')
     tftp_server = request.json.get('tftpServer')
     file_list = request.json.get('fileList')
+    target_version = request.json.get('targetVersion')
 
     try:
         args = []
         if script == 'file_transfer':
             args = [tftp_server] + file_list.split(',')
+        elif script == 'check_version':
+            args = [target_version]
 
         process = script_manager.start_process(script, args)
         logging.info(f"启动脚本: {script}")
