@@ -27,12 +27,24 @@ class ScriptManager:
 
     def start_process(self, script_name):
         python_interpreter = sys.executable
-        if script_name == 'check_version':
-            self.process = subprocess.Popen([python_interpreter, '-u', 'check_version.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True, encoding='utf-8')
-        elif script_name == 'upgrade_device':
-            self.process = subprocess.Popen([python_interpreter, '-u', 'upgrade_device_new.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True, encoding='utf-8')
-        else:
+        script_mapping = {
+            'check_version': 'check_version.py',
+            'upgrade_device': 'upgrade_device_new.py',
+            'netconf_set': 'netconf_set.py',
+            'file_transfer': 'file_transfer.py',
+            'extract_device_ip': 'extract_device_ip.py',
+        }
+        script_file = script_mapping.get(script_name)
+        if not script_file:
             raise ValueError("错误的脚本名称")
+        self.process = subprocess.Popen(
+            [python_interpreter, '-u', script_file],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            bufsize=1,
+            universal_newlines=True,
+            encoding='utf-8'
+        )
         return self.process
 
     def enqueue_output(self, proc):
