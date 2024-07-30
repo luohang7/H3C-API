@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 import subprocess
 import logging
 import sys
@@ -8,7 +8,7 @@ from flask_cors import CORS
 from queue import Queue
 from threading import Thread
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='dist')
 process = None  # 用于跟踪当前运行的进程
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -81,6 +81,14 @@ class ScriptManager:
             logging.info("脚本已终止")
 
 script_manager = ScriptManager()
+
+@app.route('/')
+def serve_frontend():
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory(app.static_folder, path)
 
 @app.route('/run_script', methods=['POST'])
 def run_script():
