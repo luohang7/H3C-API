@@ -205,9 +205,3 @@ if __name__ == "__main__":
                 future.result()
             except Exception as e:
                 logger.error(f"执行设备处理期间出错: {e}")
-
-    # 删除临时文件
-    if os.path.exists('temp_files.txt'):
-        os.remove('temp_files.txt')
-    elif os.path.exists('current_version_files.txt'):
-        os.remove('current_version_files.txt')
