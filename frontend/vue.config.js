@@ -5,24 +5,24 @@ module.exports = {
   devServer: {
     proxy: {
       '/run_script': {
-        target: 'http://localhost:5000',
+        target: 'http://flask_app:5000',
         changeOrigin: true
       },
        '/upload_csv': {
-        target: 'http://localhost:5000',
+        target: 'http://flask_app:5000',
         changeOrigin: true
       },
       '/stop_script':{
-        target: 'http://localhost:5000',
+        target: 'http://flask_app:5000',
         changeOrigin: true
       },
       '/socket.io': {
-        target: 'http://localhost:5000',
+        target: 'http://flask_app:5000',
         ws: true,
         changeOrigin: true
       },
       '/download_csv': {
-        target: 'http://localhost:5000',
+        target: 'http://flask_app:5000',
         changeOrigin: true
       }
     }

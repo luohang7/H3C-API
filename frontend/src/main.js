@@ -11,7 +11,7 @@ Vue.config.productionTip = false;
 
 Vue.use(Vuetify);
 
-Vue.use(VueSocketIOExt, SocketIO('http://localhost:5000'))
+Vue.use(VueSocketIOExt, SocketIO('/'))
 
 new Vue({
   router,
